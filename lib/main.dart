@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'core/config/app_theme.dart';
+import 'core/cubit/theme_cubit.dart';
 import 'core/di/injection.dart' as di;
 import 'core/router/app_router.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
@@ -31,12 +32,19 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (_) => di.sl<PlaceDetailBloc>()),
         BlocProvider(create: (_) => di.sl<FavoritesBloc>()),
         BlocProvider(create: (_) => di.sl<ReviewsBloc>()),
+        BlocProvider(create: (_) => ThemeCubit()),
       ],
-      child: MaterialApp.router(
-        title: 'Cafe Finder',
-        theme: AppTheme.lightTheme,
-        routerConfig: AppRouter.router,
-        debugShowCheckedModeBanner: false,
+      child: BlocBuilder<ThemeCubit, ThemeMode>(
+        builder: (context, themeMode) {
+          return MaterialApp.router(
+            title: 'Cafe Finder',
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: themeMode,
+            routerConfig: AppRouter.router,
+            debugShowCheckedModeBanner: false,
+          );
+        },
       ),
     );
   }

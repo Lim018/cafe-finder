@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Background: warm tan -->
+  <rect width="1024" height="1024" fill="#D4A574"/>
+  <!-- Map-pin / coffee-bean silhouette -->
+  <!-- Original path scaled from 160px region (460-620, 40-200) to 1024 canvas, then centered.
+       Pin spans roughly x: 192-848, y: 154-794  (656 wide, 640 tall) -->
+  <path d="M 512 154
+           C 333 154, 205 282, 205 461
+           C 205 666, 512 948, 512 948
+           C 512 948, 819 666, 819 461
+           C 819 282, 691 154, 512 154 Z"
+        fill="#3D2817"/>
+  <!-- Bean crease running vertically through center -->
+  <path d="M 512 230
+           C 435 320, 435 602, 512 774"
+        stroke="#F5E6D3" stroke-width="19" fill="none" stroke-linecap="round"/>
+  <!-- Side highlight on the bean (left side) -->
+  <path d="M 320 358
+           Q 294 448, 320 538"
+        stroke="#6F4E37" stroke-width="19" fill="none" stroke-linecap="round" opacity="0.6"/>
+</svg>

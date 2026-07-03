@@ -4,12 +4,19 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../bloc/place_detail_bloc.dart';
+import '../widgets/place_detail_skeleton.dart';
 import '../../../favorites/presentation/bloc/favorites_bloc.dart';
 import '../../../reviews/presentation/bloc/reviews_bloc.dart';
+import '../../../../core/components/app_button.dart';
+import '../../../../core/components/rating_stars.dart';
+import '../../../../core/components/section_header.dart';
+import '../../../../core/config/app_radius.dart';
+import '../../../../core/config/app_spacing.dart';
+import '../../../../core/config/app_theme.dart';
+import '../../../../core/config/app_typography.dart';
 
 class PlaceDetailScreen extends StatefulWidget {
   final int placeId;
-
   const PlaceDetailScreen({super.key, required this.placeId});
 
   @override
@@ -17,8 +24,8 @@ class PlaceDetailScreen extends StatefulWidget {
 }
 
 class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
-  final TextEditingController _reviewController = TextEditingController();
-  double _reviewRating = 5.0;
+  final _pageCtrl = PageController();
+  int _photoIndex = 0;
 
   @override
   void initState() {
@@ -27,61 +34,87 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
     context.read<FavoritesBloc>().add(LoadFavorites());
   }
 
-  void _showAddReviewDialog() {
-    showDialog(
+  @override
+  void dispose() {
+    _pageCtrl.dispose();
+    super.dispose();
+  }
+
+  void _showReviewSheet() {
+    final reviewCtrl = TextEditingController();
+    int rating = 5;
+
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: const Text('Tulis Ulasan'),
-              content: Column(
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      builder: (sheetCtx) => StatefulBuilder(
+        builder: (_, setSheet) => Padding(
+          padding: EdgeInsets.only(
+              bottom: MediaQuery.of(sheetCtx).viewInsets.bottom),
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.xl, AppSpacing.md, AppSpacing.xl, AppSpacing.xl),
+              child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Slider(
-                    value: _reviewRating,
-                    min: 1,
-                    max: 5,
-                    divisions: 4,
-                    label: _reviewRating.round().toString(),
-                    onChanged: (val) {
-                      setState(() {
-                        _reviewRating = val;
-                      });
-                    },
-                  ),
-                  TextField(
-                    controller: _reviewController,
-                    decoration: const InputDecoration(
-                      hintText: 'Bagaimana pengalaman Anda?',
-                      border: OutlineInputBorder(),
+                  // Handle
+                  Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: AppSpacing.lg),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                      borderRadius: BorderRadius.circular(2),
                     ),
-                    maxLines: 3,
+                  ),
+                  Text('Tulis Ulasan',
+                      style: AppTypography.textTheme.headlineMedium
+                          ?.copyWith(color: Theme.of(context).colorScheme.onSurface)),
+                  const SizedBox(height: 4),
+                  Text('Bagikan pengalamanmu di sini',
+                      style: AppTypography.textTheme.bodySmall
+                          ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                  const SizedBox(height: AppSpacing.xl),
+                  // Interactive stars
+                  InteractiveRatingStars(
+                    initialRating: rating,
+                    size: 44,
+                    onRatingChanged: (r) => setSheet(() => rating = r),
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  // Review text
+                  TextField(
+                    controller: reviewCtrl,
+                    maxLines: 4,
+                    decoration: const InputDecoration(
+                      hintText: 'Ceritakan pengalaman kamu…',
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  // Submit
+                  AppButton(
+                    label: 'Kirim Ulasan',
+                    onPressed: () {
+                      context.read<ReviewsBloc>().add(SubmitReview(
+                            placeId: widget.placeId,
+                            rating: rating,
+                            content: reviewCtrl.text.trim(),
+                          ));
+                      Navigator.pop(sheetCtx);
+                      reviewCtrl.dispose();
+                    },
                   ),
                 ],
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => context.pop(),
-                  child: const Text('Batal'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    context.read<ReviewsBloc>().add(SubmitReview(
-                          placeId: widget.placeId,
-                          rating: _reviewRating.round(),
-                          content: _reviewController.text,
-                        ));
-                    context.pop();
-                    _reviewController.clear();
-                  },
-                  child: const Text('Kirim'),
-                ),
-              ],
-            );
-          },
-        );
-      },
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -90,186 +123,383 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
     return BlocListener<ReviewsBloc, ReviewsState>(
       listener: (context, state) {
         if (state is ReviewsSubmittedSuccess) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message)));
-          context.read<PlaceDetailBloc>().add(LoadPlaceDetail(widget.placeId)); // Reload to show new review
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(state.message)),
+          );
+          context.read<PlaceDetailBloc>().add(LoadPlaceDetail(widget.placeId));
         }
       },
       child: Scaffold(
         body: BlocBuilder<PlaceDetailBloc, PlaceDetailState>(
           builder: (context, state) {
             if (state is PlaceDetailLoading) {
-              return const Center(child: CircularProgressIndicator());
-            } else if (state is PlaceDetailError) {
-              return Center(child: Text(state.message));
-            } else if (state is PlaceDetailLoaded) {
+              return const PlaceDetailSkeleton();
+            }
+            if (state is PlaceDetailError) {
+              return Center(
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(Icons.cloud_off_rounded, size: 56,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.4)),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(state.message,
+                      style: AppTypography.textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                  const SizedBox(height: AppSpacing.lg),
+                  FilledButton.icon(
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: const Text('Coba lagi'),
+                    onPressed: () => context.read<PlaceDetailBloc>()
+                        .add(LoadPlaceDetail(widget.placeId)),
+                  ),
+                ]),
+              );
+            }
+
+            if (state is PlaceDetailLoaded) {
               final place = state.place;
+              final cs = Theme.of(context).colorScheme;
+
               return CustomScrollView(
                 slivers: [
-                  SliverAppBar(
-                    expandedHeight: 250,
-                    pinned: true,
-                    flexibleSpace: FlexibleSpaceBar(
-                      background: place.photos.isNotEmpty
-                          ? PageView.builder(
-                              itemCount: place.photos.length,
-                              itemBuilder: (context, index) {
-                                return CachedNetworkImage(
-                                  imageUrl: place.photos[index].url,
-                                  fit: BoxFit.cover,
+                  // ── Hero image ────────────────────────────────────────
+                  SliverToBoxAdapter(
+                    child: SizedBox(
+                      height: 300,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          // Photo carousel
+                          place.photos.isEmpty
+                              ? Container(
+                                  color: cs.primaryContainer,
+                                  child: Icon(Icons.local_cafe_rounded,
+                                      size: 64, color: cs.primary),
+                                )
+                              : Hero(
+                                  tag: 'cafe_image_${place.id}',
+                                  child: PageView.builder(
+                                    controller: _pageCtrl,
+                                    itemCount: place.photos.length,
+                                    onPageChanged: (i) =>
+                                        setState(() => _photoIndex = i),
+                                    itemBuilder: (_, i) => CachedNetworkImage(
+                                      imageUrl: place.photos[i].url,
+                                      fit: BoxFit.cover,
+                                      placeholder: (_, __) => Container(
+                                          color: cs.primaryContainer),
+                                      errorWidget: (_, __, ___) =>
+                                          Container(color: cs.primaryContainer),
+                                    ),
+                                  ),
+                                ),
+
+                          // Gradient overlay
+                          DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Colors.black.withOpacity(0.28),
+                                  Colors.transparent,
+                                  Colors.transparent,
+                                  Colors.black.withOpacity(0.32),
+                                ],
+                                stops: const [0, 0.3, 0.65, 1],
+                              ),
+                            ),
+                          ),
+
+                          // Back button
+                          Positioned(
+                            top: MediaQuery.of(context).padding.top +
+                                AppSpacing.sm,
+                            left: AppSpacing.lg,
+                            child: _CircleIconButton(
+                              icon: Icons.arrow_back_rounded,
+                              onTap: () => context.pop(),
+                            ),
+                          ),
+
+                          // Favorite button
+                          Positioned(
+                            top: MediaQuery.of(context).padding.top +
+                                AppSpacing.sm,
+                            right: AppSpacing.lg,
+                            child: BlocBuilder<FavoritesBloc, FavoritesState>(
+                              builder: (_, favState) {
+                                final isFav = favState is FavoritesLoaded &&
+                                    favState.favorites
+                                        .any((f) => f.placeId == place.id);
+                                return _CircleIconButton(
+                                  icon: isFav
+                                      ? Icons.favorite_rounded
+                                      : Icons.favorite_border_rounded,
+                                  iconColor: isFav ? AppTheme.heartColor : null,
+                                  onTap: () => context
+                                      .read<FavoritesBloc>()
+                                      .add(ToggleFavorite(place.id)),
                                 );
                               },
-                            )
-                          : Container(color: Colors.grey.shade300, child: const Icon(Icons.image, size: 50)),
-                    ),
-                    actions: [
-                      BlocBuilder<FavoritesBloc, FavoritesState>(
-                        builder: (context, favState) {
-                          bool isFavorite = false;
-                          if (favState is FavoritesLoaded) {
-                            isFavorite = favState.favorites.any((f) => f.placeId == place.id);
-                          }
-                          return IconButton(
-                            icon: Icon(
-                              isFavorite ? Icons.favorite : Icons.favorite_border,
-                              color: isFavorite ? Colors.red : Colors.white,
                             ),
-                            onPressed: () {
-                              context.read<FavoritesBloc>().add(ToggleFavorite(place.id));
-                            },
-                          );
-                        },
-                      )
-                    ],
+                          ),
+
+                          // Photo page indicators
+                          if (place.photos.length > 1)
+                            Positioned(
+                              bottom: AppSpacing.md,
+                              left: 0,
+                              right: 0,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: List.generate(
+                                    place.photos.length,
+                                    (i) => AnimatedContainer(
+                                          duration:
+                                              const Duration(milliseconds: 280),
+                                          margin: const EdgeInsets.symmetric(
+                                              horizontal: 3),
+                                          width: i == _photoIndex ? 18 : 6,
+                                          height: 6,
+                                          decoration: BoxDecoration(
+                                            color: i == _photoIndex
+                                                ? Colors.white
+                                                : Colors.white.withOpacity(0.5),
+                                            borderRadius:
+                                                BorderRadius.circular(3),
+                                          ),
+                                        )),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
                   ),
+
+                  // ── Content ───────────────────────────────────────────
                   SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).scaffoldBackgroundColor,
+                        borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(28)),
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  place.name,
-                                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                          const SizedBox(height: AppSpacing.xl),
+
+                          // ── Title + rating ──────────────────────────
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.xl),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(place.name,
+                                          style: AppTypography
+                                              .textTheme.displaySmall
+                                              ?.copyWith(color: cs.onSurface)),
+                                      const SizedBox(height: 6),
+                                      Row(children: [
+                                        Icon(Icons.location_on_outlined,
+                                            size: 15, color: cs.onSurfaceVariant),
+                                        const SizedBox(width: 3),
+                                        Expanded(
+                                          child: Text(
+                                            [place.district, place.address]
+                                                .where((s) => s != null && s.isNotEmpty)
+                                                .join(' · '),
+                                            style: AppTypography.textTheme.bodySmall
+                                                ?.copyWith(color: cs.onSurfaceVariant),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ]),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              Row(
-                                children: [
-                                  const Icon(Icons.star, color: Colors.amber),
-                                  const SizedBox(width: 4),
-                                  Text('${place.avgRating.toStringAsFixed(1)} (${place.recommendationCount})'),
-                                ],
-                              ),
-                            ],
-                          ),
-                          if (place.categoryName != null) ...[
-                            const SizedBox(height: 8),
-                            Chip(
-                              label: Text(place.categoryName!),
-                              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                              labelStyle: TextStyle(color: Theme.of(context).colorScheme.onPrimaryContainer),
+                                const SizedBox(width: AppSpacing.md),
+                                // Rating card
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: AppSpacing.md,
+                                      vertical: AppSpacing.sm),
+                                  decoration: BoxDecoration(
+                                    color: cs.primaryContainer,
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  child: Column(children: [
+                                    Row(mainAxisSize: MainAxisSize.min, children: [
+                                      Icon(Icons.star_rounded,
+                                          size: 16, color: AppTheme.starColor),
+                                      const SizedBox(width: 3),
+                                      Text(place.avgRating.toStringAsFixed(1),
+                                          style: AppTypography.textTheme.titleLarge
+                                              ?.copyWith(color: cs.onSurface)),
+                                    ]),
+                                    Text('${place.recommendationCount} ulasan',
+                                        style: AppTypography.textTheme.labelSmall
+                                            ?.copyWith(color: cs.onSurfaceVariant)),
+                                  ]),
+                                ),
+                              ],
                             ),
-                          ],
-                          const SizedBox(height: 16),
-                          Text(place.address, style: TextStyle(color: Colors.grey.shade700)),
-                          const SizedBox(height: 16),
-                          if (place.description != null) ...[
-                            const Text('Tentang Kafe', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 8),
-                            Text(place.description!),
-                            const SizedBox(height: 16),
-                          ],
-                          
-                          // Action Buttons (Maps, Web, IG)
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
+                          ),
+                          const SizedBox(height: AppSpacing.xl),
+
+                          // ── Action buttons ──────────────────────────
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.xl),
+                            child: Row(children: [
                               if (place.googleMapsUrl != null)
-                                ActionChip(
-                                  avatar: const Icon(Icons.map, size: 16),
-                                  label: const Text('Maps'),
-                                  onPressed: () => _launchUrl(place.googleMapsUrl!),
+                                Expanded(
+                                  child: FilledButton.icon(
+                                    icon: const Icon(Icons.directions_rounded, size: 18),
+                                    label: const Text('Rute'),
+                                    onPressed: () =>
+                                        _launch(place.googleMapsUrl!),
+                                  ),
                                 ),
+                              if (place.googleMapsUrl != null)
+                                const SizedBox(width: AppSpacing.sm),
                               if (place.instagramUrl != null)
-                                ActionChip(
-                                  avatar: const Icon(Icons.camera_alt, size: 16),
-                                  label: const Text('IG'),
-                                  onPressed: () => _launchUrl(place.instagramUrl!),
-                                ),
-                              if (place.websiteUrl != null)
-                                ActionChip(
-                                  avatar: const Icon(Icons.language, size: 16),
-                                  label: const Text('Web'),
-                                  onPressed: () => _launchUrl(place.websiteUrl!),
-                                ),
-                            ],
+                                _ActionBtn(
+                                    icon: Icons.photo_camera_outlined,
+                                    onTap: () => _launch(place.instagramUrl!)),
+                              if (place.websiteUrl != null) ...[
+                                const SizedBox(width: AppSpacing.sm),
+                                _ActionBtn(
+                                    icon: Icons.language_rounded,
+                                    onTap: () => _launch(place.websiteUrl!)),
+                              ],
+                              if (place.phone != null) ...[
+                                const SizedBox(width: AppSpacing.sm),
+                                _ActionBtn(
+                                    icon: Icons.call_outlined,
+                                    onTap: () =>
+                                        _launch('tel:${place.phone}')),
+                              ],
+                            ]),
                           ),
-                          const Divider(height: 32),
-                          
-                          // Tags/Facilities
-                          if (place.tags.isNotEmpty) ...[
-                            const Text('Fasilitas', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 8),
-                            Wrap(
-                              spacing: 8,
-                              children: place.tags.map((t) => Chip(label: Text(t))).toList(),
+                          const SizedBox(height: AppSpacing.xl),
+
+                          // ── Category chip ────────────────────────────
+                          if (place.categoryName != null)
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(
+                                  AppSpacing.xl, 0, AppSpacing.xl, AppSpacing.lg),
+                              child: Wrap(children: [
+                                Chip(
+                                  label: Text(place.categoryName!),
+                                  backgroundColor: cs.primaryContainer,
+                                  labelStyle: AppTypography.textTheme.labelMedium
+                                      ?.copyWith(color: cs.onPrimaryContainer,
+                                          fontWeight: FontWeight.w600),
+                                  side: BorderSide.none,
+                                ),
+                              ]),
                             ),
-                            const Divider(height: 32),
+
+                          // ── Description ─────────────────────────────
+                          if (place.description != null) ...[
+                            SectionHeader(title: 'Tentang'),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(
+                                  AppSpacing.xl, AppSpacing.sm,
+                                  AppSpacing.xl, AppSpacing.xl),
+                              child: Text(place.description!,
+                                  style: AppTypography.textTheme.bodyMedium
+                                      ?.copyWith(color: cs.onSurface, height: 1.6)),
+                            ),
                           ],
 
-                          // Reviews Section
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text('Ulasan', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                              TextButton.icon(
-                                icon: const Icon(Icons.edit),
-                                label: const Text('Tulis Ulasan'),
-                                onPressed: _showAddReviewDialog,
+                          // ── Facilities ───────────────────────────────
+                          if (place.tags.isNotEmpty) ...[
+                            SectionHeader(title: 'Fasilitas'),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(
+                                  AppSpacing.xl, AppSpacing.sm,
+                                  AppSpacing.xl, AppSpacing.xl),
+                              child: Wrap(
+                                spacing: AppSpacing.sm,
+                                runSpacing: AppSpacing.sm,
+                                children: place.tags.map((tag) {
+                                  return Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: AppSpacing.md,
+                                        vertical: AppSpacing.sm - 2),
+                                    decoration: BoxDecoration(
+                                      color: cs.surface,
+                                      borderRadius: AppRadius.pillAll,
+                                      border: Border.all(color: cs.outlineVariant),
+                                    ),
+                                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                                      Icon(Icons.check_circle_outline_rounded,
+                                          size: 14, color: cs.primary),
+                                      const SizedBox(width: 5),
+                                      Text(tag,
+                                          style: AppTypography.textTheme.labelMedium
+                                              ?.copyWith(color: cs.onSurface)),
+                                    ]),
+                                  );
+                                }).toList(),
                               ),
-                            ],
+                            ),
+                          ],
+
+                          // ── Rating distribution ──────────────────────
+                          if (place.recentReviews.isNotEmpty) ...[
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.xl),
+                              child: _RatingDistribution(
+                                avgRating: place.avgRating,
+                                recentReviews: place.recentReviews,
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.xl),
+                          ],
+
+                          // ── Reviews ──────────────────────────────────
+                          SectionHeader(
+                            title: 'Ulasan',
+                            trailing: TextButton.icon(
+                              icon: const Icon(Icons.edit_outlined, size: 16),
+                              label: const Text('Tulis'),
+                              onPressed: _showReviewSheet,
+                            ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: AppSpacing.sm),
+
                           if (place.recentReviews.isEmpty)
-                            const Text('Belum ada ulasan.')
-                          else
-                            ListView.builder(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: place.recentReviews.length,
-                              itemBuilder: (context, index) {
-                                final rev = place.recentReviews[index];
-                                return Card(
-                                  margin: const EdgeInsets.only(bottom: 8),
-                                  child: ListTile(
-                                    leading: CircleAvatar(
-                                      backgroundImage: rev.userAvatarUrl != null 
-                                          ? CachedNetworkImageProvider(rev.userAvatarUrl!) 
-                                          : null,
-                                      child: rev.userAvatarUrl == null ? const Icon(Icons.person) : null,
-                                    ),
-                                    title: Text(rev.userName),
-                                    subtitle: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          children: List.generate(5, (i) => Icon(
-                                            i < rev.rating ? Icons.star : Icons.star_border,
-                                            size: 14,
-                                            color: Colors.amber,
-                                          )),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(rev.content),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              },
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(
+                                  AppSpacing.xl, AppSpacing.md,
+                                  AppSpacing.xl, AppSpacing.xl),
+                              child: Text('Belum ada ulasan.',
+                                  style: AppTypography.textTheme.bodyMedium
+                                      ?.copyWith(color: cs.onSurfaceVariant)),
                             )
+                          else
+                            ...place.recentReviews.map(
+                              (rev) => Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                    AppSpacing.xl, 0,
+                                    AppSpacing.xl, AppSpacing.md),
+                                child: _ReviewCard(review: rev),
+                              ),
+                            ),
+
+                          // Bottom padding for floating nav
+                          const SizedBox(height: AppSpacing.floatingNavHeight),
                         ],
                       ),
                     ),
@@ -277,17 +507,206 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                 ],
               );
             }
-            return const SizedBox();
+
+            return const SizedBox.shrink();
           },
         ),
       ),
     );
   }
 
-  Future<void> _launchUrl(String urlString) async {
-    final url = Uri.parse(urlString);
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url);
+  Future<void> _launch(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) await launchUrl(uri);
+  }
+}
+
+// ─── Sub-widgets ───────────────────────────────────────────────────────────
+
+class _CircleIconButton extends StatelessWidget {
+  final IconData icon;
+  final Color? iconColor;
+  final VoidCallback onTap;
+
+  const _CircleIconButton(
+      {required this.icon, this.iconColor, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 42,
+        height: 42,
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.92),
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withOpacity(0.15),
+                blurRadius: 8,
+                offset: const Offset(0, 2))
+          ],
+        ),
+        child: Icon(icon,
+            size: 22,
+            color: iconColor ?? Theme.of(context).colorScheme.onSurface),
+      ),
+    );
+  }
+}
+
+class _ActionBtn extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _ActionBtn({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 46,
+        height: 46,
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: cs.outlineVariant),
+        ),
+        child: Icon(icon, color: cs.primary, size: 20),
+      ),
+    );
+  }
+}
+
+class _RatingDistribution extends StatelessWidget {
+  final double avgRating;
+  final List recentReviews; // List<PlaceReview>
+
+  const _RatingDistribution(
+      {required this.avgRating, required this.recentReviews});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    // Compute counts — NOTE: approximate (only recentReviews)
+    final counts = {5: 0, 4: 0, 3: 0, 2: 0, 1: 0};
+    for (final r in recentReviews) {
+      final rating = (r.rating as int).clamp(1, 5);
+      counts[rating] = (counts[rating] ?? 0) + 1;
     }
+    final total = recentReviews.length;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: AppRadius.xlAll,
+        border: Border.all(color: cs.outlineVariant),
+      ),
+      child: Row(children: [
+        Column(children: [
+          Text(avgRating.toStringAsFixed(1),
+              style: AppTypography.textTheme.displayMedium
+                  ?.copyWith(color: cs.onSurface, letterSpacing: -1)),
+          RatingStars(rating: avgRating, size: 14),
+          const SizedBox(height: 2),
+          Text('dari ${recentReviews.length} ulasan*',
+              style: AppTypography.textTheme.labelSmall
+                  ?.copyWith(color: cs.onSurfaceVariant)),
+        ]),
+        const SizedBox(width: AppSpacing.xl),
+        Expanded(
+          child: Column(
+            children: [5, 4, 3, 2, 1].map((star) {
+              final count = counts[star] ?? 0;
+              final fraction = total > 0 ? count / total : 0.0;
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Row(children: [
+                  Text('$star',
+                      style: AppTypography.textTheme.labelSmall
+                          ?.copyWith(color: cs.onSurfaceVariant, fontSize: 10)),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(3),
+                      child: LinearProgressIndicator(
+                        value: fraction.toDouble(),
+                        minHeight: 6,
+                        backgroundColor: cs.outlineVariant,
+                        color: AppTheme.starColor,
+                      ),
+                    ),
+                  ),
+                ]),
+              );
+            }).toList(),
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
+class _ReviewCard extends StatelessWidget {
+  final dynamic review; // PlaceReview
+
+  const _ReviewCard({required this.review});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: AppRadius.lgAll,
+        border: Border.all(color: cs.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            CircleAvatar(
+              radius: 20,
+              backgroundColor: cs.primaryContainer,
+              backgroundImage: review.userAvatarUrl != null
+                  ? CachedNetworkImageProvider(review.userAvatarUrl!)
+                  : null,
+              child: review.userAvatarUrl == null
+                  ? Icon(Icons.person_rounded,
+                      color: cs.onPrimaryContainer, size: 20)
+                  : null,
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(review.userName,
+                      style: AppTypography.textTheme.titleSmall
+                          ?.copyWith(color: cs.onSurface)),
+                  Row(children: [
+                    RatingStars(rating: review.rating.toDouble(), size: 13),
+                    const SizedBox(width: 6),
+                    Text(review.createdAt,
+                        style: AppTypography.textTheme.labelSmall
+                            ?.copyWith(color: cs.onSurfaceVariant)),
+                  ]),
+                ],
+              ),
+            ),
+          ]),
+          const SizedBox(height: AppSpacing.sm),
+          Text(review.content,
+              style: AppTypography.textTheme.bodySmall
+                  ?.copyWith(color: cs.onSurface, height: 1.5)),
+        ],
+      ),
+    );
   }
 }

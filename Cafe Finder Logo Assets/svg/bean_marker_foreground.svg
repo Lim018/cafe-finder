@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Transparent background. For Android adaptive icon, the system may crop
+       the outer 33% (circle/squircle/rounded mask), so all critical content
+       must live within the central 66% safe zone (~340-684 on a 1024 canvas).
+       The bean is centered and sized to fit comfortably within that circle. -->
+  <!-- Scale-down: pin is 60% of canvas, centered. Original path was 656x794 in 1024.
+       Target: ~480x580, centered at (512, 512). Scale factor ~0.73 -->
+  <g transform="translate(512 512) scale(0.72) translate(-512 -551)">
+    <path d="M 512 154
+             C 333 154, 205 282, 205 461
+             C 205 666, 512 948, 512 948
+             C 512 948, 819 666, 819 461
+             C 819 282, 691 154, 512 154 Z"
+          fill="#3D2817"/>
+    <path d="M 512 230
+             C 435 320, 435 602, 512 774"
+          stroke="#F5E6D3" stroke-width="19" fill="none" stroke-linecap="round"/>
+    <path d="M 320 358
+             Q 294 448, 320 538"
+          stroke="#6F4E37" stroke-width="19" fill="none" stroke-linecap="round" opacity="0.6"/>
+  </g>
+</svg>
