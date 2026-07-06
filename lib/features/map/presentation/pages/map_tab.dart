@@ -1,3 +1,4 @@
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -85,8 +86,8 @@ class _MapTabState extends State<MapTab> {
                     final isSelected = state.selectedPlace?.id == p.id;
                     return Marker(
                       point: LatLng(p.latitude, p.longitude),
-                      width: isSelected ? 56 : 44,
-                      height: isSelected ? 56 : 44,
+                      width: isSelected ? 60 : 48,
+                      height: isSelected ? 68 : 54,
                       alignment: Alignment.topCenter,
                       child: GestureDetector(
                         onTap: () =>
@@ -204,13 +205,72 @@ class _CafeMarker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final size = isSelected ? 56.0 : 44.0;
-    return SvgPicture.asset(
-      'assets/logo/bean_marker_foreground.svg',
-      width: size,
-      height: size,
+    final badge = isSelected ? 52.0 : 42.0;
+    final radius = badge * 0.34;
+    final borderColor = isSelected ? AppTheme.primary : Colors.white;
+    final borderWidth = isSelected ? 3.0 : 2.5;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Rounded-square badge with the logo.
+        Container(
+          width: badge,
+          height: badge,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(radius),
+            border: Border.all(color: borderColor, width: borderWidth),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.28),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(radius - borderWidth),
+            child: SvgPicture.asset(
+              'assets/logo/bean_marker_logo.svg',
+              fit: BoxFit.cover,
+            ),
+          ),
+        ),
+        // Tapered tail pointing to the location.
+        Transform.translate(
+          offset: const Offset(0, -1),
+          child: CustomPaint(
+            size: Size(isSelected ? 16 : 14, isSelected ? 11 : 9),
+            painter: _MarkerTailPainter(borderColor),
+          ),
+        ),
+      ],
     );
   }
+}
+
+class _MarkerTailPainter extends CustomPainter {
+  final Color color;
+  const _MarkerTailPainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Cone with slightly concave sides tapering to a point at the bottom.
+    final path = ui.Path()
+      ..moveTo(0, 0)
+      ..quadraticBezierTo(size.width * 0.5, size.height * 0.15,
+          size.width * 0.5, size.height)
+      ..quadraticBezierTo(size.width * 0.5, size.height * 0.15, size.width, 0)
+      ..close();
+
+    canvas.drawShadow(path, Colors.black.withOpacity(0.28), 2, false);
+    canvas.drawPath(path, Paint()..color = color);
+  }
+
+  @override
+  bool shouldRepaint(_MarkerTailPainter oldDelegate) =>
+      oldDelegate.color != color;
 }
 
 class _MapControlBtn extends StatelessWidget {
