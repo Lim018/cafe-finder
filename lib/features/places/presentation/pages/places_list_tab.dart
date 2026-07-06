@@ -10,7 +10,6 @@ import '../bloc/places_list_bloc.dart';
 import '../widgets/place_card.dart';
 import '../widgets/places_list_skeleton.dart';
 import '../../../../core/config/app_spacing.dart';
-import '../../../../core/config/app_theme.dart';
 import '../../../../core/config/app_typography.dart';
 
 class PlacesListTab extends StatefulWidget {
@@ -360,66 +359,19 @@ class _PlacesListTabState extends State<PlacesListTab> {
 class _PromoBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
           AppSpacing.xl, AppSpacing.sm, AppSpacing.xl, AppSpacing.sm),
-      height: 110,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-          colors: [Color(0xFF6F4E37), Color(0xFF5A3E2B)],
-        ),
+      child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Row(children: [
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.only(left: AppSpacing.lg),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text('Promo · 08.00–11.00',
-                    style: const TextStyle(
-                        fontSize: 10,
-                        color: Colors.white70,
-                        fontWeight: FontWeight.w400)),
-                const SizedBox(height: 4),
-                const Text('Beli 1\nGratis 1',
-                    style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                        height: 1.15)),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppTheme.secondary,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: const Text('Klaim sekarang',
-                      style: TextStyle(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF3A2719))),
-                ),
-              ],
-            ),
+        child: AspectRatio(
+          aspectRatio: 2 / 1, // banner is 2:1
+          child: Image.asset(
+            'assets/images/SpecialCoffeeBanner.png',
+            fit: BoxFit.cover,
           ),
         ),
-        // Placeholder foto — ganti dengan Image.asset/CachedNetworkImage
-        Container(
-          width: 150,
-          height: 110,
-          color: AppTheme.primary.withOpacity(0.4),
-          child: const Icon(Icons.local_cafe_rounded,
-              size: 56, color: Colors.white38),
-        ),
-      ]),
+      ),
     );
   }
 }
