@@ -12,6 +12,10 @@ class MapState extends Equatable {
   // One-shot camera target set by FocusPlace (from the detail "Lihat di Peta"
   // button); cleared once the map has moved there.
   final LatLng? focusTarget;
+  // Route metrics for the selected place (driving profile from OSRM).
+  final double routeDistanceM;
+  final double routeDurationS; // car/driving duration
+  final List<RouteStep> routeSteps;
 
   const MapState({
     this.status = MapStatus.initial,
@@ -21,6 +25,9 @@ class MapState extends Equatable {
     this.routePoints = const [],
     this.errorMessage = '',
     this.focusTarget,
+    this.routeDistanceM = 0,
+    this.routeDurationS = 0,
+    this.routeSteps = const [],
   });
 
   MapState copyWith({
@@ -33,6 +40,9 @@ class MapState extends Equatable {
     String? errorMessage,
     LatLng? focusTarget,
     bool clearFocusTarget = false,
+    double? routeDistanceM,
+    double? routeDurationS,
+    List<RouteStep>? routeSteps,
   }) {
     return MapState(
       status: status ?? this.status,
@@ -42,6 +52,11 @@ class MapState extends Equatable {
       routePoints: clearSelectedPlace ? [] : (routePoints ?? this.routePoints),
       errorMessage: errorMessage ?? this.errorMessage,
       focusTarget: clearFocusTarget ? null : (focusTarget ?? this.focusTarget),
+      routeDistanceM:
+          clearSelectedPlace ? 0 : (routeDistanceM ?? this.routeDistanceM),
+      routeDurationS:
+          clearSelectedPlace ? 0 : (routeDurationS ?? this.routeDurationS),
+      routeSteps: clearSelectedPlace ? const [] : (routeSteps ?? this.routeSteps),
     );
   }
 
@@ -54,5 +69,8 @@ class MapState extends Equatable {
         routePoints,
         errorMessage,
         focusTarget,
+        routeDistanceM,
+        routeDurationS,
+        routeSteps,
       ];
 }

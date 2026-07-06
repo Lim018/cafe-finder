@@ -4,6 +4,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../places/domain/entities/place.dart';
 import '../../../places/domain/repositories/places_repository.dart';
+import '../../domain/entities/route_step.dart';
 import 'package:dio/dio.dart';
 
 part 'map_event.dart';
@@ -108,7 +109,13 @@ class MapBloc extends Bloc<MapEvent, MapState> {
   }
 
   Future<void> _onSelectPlaceMarker(SelectPlaceMarker event, Emitter<MapState> emit) async {
-    emit(state.copyWith(selectedPlace: event.place, routePoints: []));
+    emit(state.copyWith(
+      selectedPlace: event.place,
+      routePoints: [],
+      routeDistanceM: 0,
+      routeDurationS: 0,
+      routeSteps: const [],
+    ));
     if (state.currentLocation != null) {
       try {
         final dio = Dio(BaseOptions(headers: {
@@ -116,13 +123,38 @@ class MapBloc extends Bloc<MapEvent, MapState> {
         }));
         final start = state.currentLocation!;
         final end = LatLng(event.place.latitude, event.place.longitude);
-        final url = 'https://router.project-osrm.org/route/v1/driving/${start.longitude},${start.latitude};${end.longitude},${end.latitude}?geometries=geojson';
+        final url =
+            'https://router.project-osrm.org/route/v1/driving/${start.longitude},${start.latitude};${end.longitude},${end.latitude}?geometries=geojson&overview=full&steps=true';
         final response = await dio.get(url);
-        if (response.data != null && response.data['routes'] != null && response.data['routes'].isNotEmpty) {
-          final geometry = response.data['routes'][0]['geometry'];
-          final coordinates = geometry['coordinates'] as List;
-          final routePoints = coordinates.map((c) => LatLng((c[1] as num).toDouble(), (c[0] as num).toDouble())).toList();
-          emit(state.copyWith(routePoints: routePoints));
+        final routes = response.data?['routes'];
+        if (routes != null && routes.isNotEmpty) {
+          final route = routes[0];
+          final coordinates = route['geometry']['coordinates'] as List;
+          final routePoints = coordinates
+              .map((c) => LatLng((c[1] as num).toDouble(), (c[0] as num).toDouble()))
+              .toList();
+
+          final steps = <RouteStep>[];
+          final legs = route['legs'] as List?;
+          if (legs != null && legs.isNotEmpty) {
+            for (final s in (legs[0]['steps'] as List? ?? [])) {
+              final maneuver = s['maneuver'] ?? {};
+              steps.add(RouteStep(
+                distanceM: (s['distance'] as num?)?.toDouble() ?? 0,
+                durationS: (s['duration'] as num?)?.toDouble() ?? 0,
+                maneuverType: maneuver['type']?.toString() ?? 'continue',
+                maneuverModifier: maneuver['modifier']?.toString(),
+                roadName: s['name']?.toString() ?? '',
+              ));
+            }
+          }
+
+          emit(state.copyWith(
+            routePoints: routePoints,
+            routeDistanceM: (route['distance'] as num?)?.toDouble() ?? 0,
+            routeDurationS: (route['duration'] as num?)?.toDouble() ?? 0,
+            routeSteps: steps,
+          ));
         }
       } catch (e) {
         emit(state.copyWith(

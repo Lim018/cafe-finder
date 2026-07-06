@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import '../bloc/map_bloc.dart';
 import '../widgets/map_skeleton.dart';
+import '../widgets/directions_sheet.dart';
 import '../../../places/domain/entities/place.dart';
 import '../../../../core/config/app_radius.dart';
 import '../../../../core/config/app_spacing.dart';
@@ -210,6 +211,15 @@ class _MapTabState extends State<MapTab> {
                       context.push('/place/${state.selectedPlace!.id}'),
                   onClose: () =>
                       context.read<MapBloc>().add(ClearSelectedPlace()),
+                  onDirections: () {
+                    if (state.currentLocation == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                          content: Text(
+                              'Aktifkan lokasi untuk melihat petunjuk arah')));
+                      return;
+                    }
+                    showDirectionsSheet(context);
+                  },
                 ),
               ),
           ],
@@ -371,11 +381,13 @@ class _MiniPlaceCard extends StatelessWidget {
   final Place place;
   final VoidCallback onTap;
   final VoidCallback onClose;
+  final VoidCallback onDirections;
 
   const _MiniPlaceCard({
     required this.place,
     required this.onTap,
     required this.onClose,
+    required this.onDirections,
   });
 
   @override
@@ -435,22 +447,47 @@ class _MiniPlaceCard extends StatelessWidget {
                     ],
                   ]),
                   const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: cs.primary,
-                      borderRadius: AppRadius.pillAll,
+                  Row(children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: cs.primary,
+                        borderRadius: AppRadius.pillAll,
+                      ),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Text('Lihat detail',
+                            style: AppTypography.textTheme.labelSmall?.copyWith(
+                                color: cs.onPrimary,
+                                fontWeight: FontWeight.w600)),
+                        const SizedBox(width: 4),
+                        Icon(Icons.arrow_forward_rounded,
+                            size: 13, color: cs.onPrimary),
+                      ]),
                     ),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      Text('Lihat detail',
-                          style: AppTypography.textTheme.labelSmall
-                              ?.copyWith(color: cs.onPrimary, fontWeight: FontWeight.w600)),
-                      const SizedBox(width: 4),
-                      Icon(Icons.arrow_forward_rounded,
-                          size: 13, color: cs.onPrimary),
-                    ]),
-                  ),
+                    const SizedBox(width: AppSpacing.sm),
+                    GestureDetector(
+                      onTap: onDirections,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.md, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: cs.primaryContainer,
+                          borderRadius: AppRadius.pillAll,
+                        ),
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          Icon(Icons.directions_rounded,
+                              size: 13, color: cs.onPrimaryContainer),
+                          const SizedBox(width: 4),
+                          Text('Arah',
+                              style: AppTypography.textTheme.labelSmall
+                                  ?.copyWith(
+                                      color: cs.onPrimaryContainer,
+                                      fontWeight: FontWeight.w600)),
+                        ]),
+                      ),
+                    ),
+                  ]),
                 ],
               ),
             ),
