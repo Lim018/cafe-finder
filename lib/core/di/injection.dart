@@ -19,6 +19,10 @@ import '../../features/favorites/data/datasources/favorites_remote_datasource.da
 import '../../features/favorites/data/repositories/favorites_repository_impl.dart';
 import '../../features/favorites/domain/repositories/favorites_repository.dart';
 import '../../features/favorites/presentation/bloc/favorites_bloc.dart';
+import '../../features/add_place/data/datasources/add_place_remote_datasource.dart';
+import '../../features/add_place/data/repositories/add_place_repository_impl.dart';
+import '../../features/add_place/domain/repositories/add_place_repository.dart';
+import '../../features/add_place/presentation/cubit/add_place_cubit.dart';
 import '../../features/reviews/data/datasources/reviews_remote_datasource.dart';
 import '../../features/reviews/data/repositories/reviews_repository_impl.dart';
 import '../../features/reviews/domain/repositories/reviews_repository.dart';
@@ -71,6 +75,13 @@ Future<void> init() async {
   sl.registerLazySingleton<FavoritesRepository>(
       () => FavoritesRepositoryImpl(remoteDataSource: sl()));
   sl.registerFactory(() => FavoritesBloc(repository: sl()));
+
+  // Add Place
+  sl.registerLazySingleton<AddPlaceRemoteDataSource>(
+      () => AddPlaceRemoteDataSourceImpl(dio: sl<DioClient>().dio));
+  sl.registerLazySingleton<AddPlaceRepository>(
+      () => AddPlaceRepositoryImpl(remoteDataSource: sl()));
+  sl.registerFactory(() => AddPlaceCubit(repository: sl()));
 
   // Reviews
   sl.registerLazySingleton<ReviewsRemoteDataSource>(

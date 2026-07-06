@@ -328,7 +328,7 @@ class _PlacesListTabState extends State<PlacesListTab> {
     // Lift FAB above the floating bottom nav bar (parent Scaffold uses
     // extendBody:true so the body extends under the nav).
     final navInset = AppSpacing.floatingNavHeight +
-        AppSpacing.floatingNavBottomInset +
+        AppSpacing.sm +
         MediaQuery.of(context).padding.bottom;
     return Padding(
       padding: EdgeInsets.only(bottom: navInset),
@@ -340,9 +340,7 @@ class _PlacesListTabState extends State<PlacesListTab> {
       onPressed: () {
         final authState = context.read<AuthBloc>().state;
         if (authState is Authenticated) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Halaman Tambah Lokasi belum tersedia')),
-          );
+          context.push('/add-place');
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Silakan login untuk menambah lokasi')),

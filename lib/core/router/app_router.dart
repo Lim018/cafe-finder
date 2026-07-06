@@ -5,6 +5,7 @@ import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/places/presentation/pages/home_page.dart';
 import '../../features/places/presentation/pages/places_list_tab.dart';
 import '../../features/places/presentation/pages/place_detail_screen.dart';
+import '../../features/add_place/presentation/pages/add_place_page.dart';
 import '../../features/map/presentation/pages/map_tab.dart';
 import '../../features/favorites/presentation/pages/favorites_tab.dart';
 import '../../features/profile/presentation/pages/profile_tab.dart';
@@ -24,6 +25,10 @@ class AppRouter {
       GoRoute(
         path: '/register',
         builder: (context, state) => const RegisterPage(),
+      ),
+      GoRoute(
+        path: '/add-place',
+        builder: (context, state) => const AddPlacePage(),
       ),
       GoRoute(
         path: '/place/:id',
