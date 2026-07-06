@@ -23,12 +23,40 @@ class MapTab extends StatefulWidget {
 
 class _MapTabState extends State<MapTab> {
   final MapController _mapCtrl = MapController();
+  final TextEditingController _searchCtrl = TextEditingController();
   LatLng? _appliedFocus;
+  String _query = '';
 
   @override
   void initState() {
     super.initState();
     context.read<MapBloc>().add(InitializeMap());
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  List<Place> _filterPlaces(List<Place> places) {
+    final q = _query.trim().toLowerCase();
+    if (q.isEmpty) return places;
+    return places.where((p) {
+      return p.name.toLowerCase().contains(q) ||
+          p.address.toLowerCase().contains(q) ||
+          (p.district?.toLowerCase().contains(q) ?? false);
+    }).toList();
+  }
+
+  /// After a search, recenter to the first match so the user sees a result.
+  void _onSearchSubmit(List<Place> places) {
+    final matches = _filterPlaces(places);
+    if (matches.isNotEmpty) {
+      final first = matches.first;
+      _mapCtrl.move(LatLng(first.latitude, first.longitude), 15);
+    }
+    FocusManager.instance.primaryFocus?.unfocus();
   }
 
   /// Move the camera to the focus target set by FocusPlace (detail "Lihat di
@@ -103,9 +131,9 @@ class _MapTabState extends State<MapTab> {
                     ],
                   ),
 
-                // Place markers
+                // Place markers (respecting the search filter)
                 MarkerLayer(
-                  markers: state.places.map((p) {
+                  markers: _filterPlaces(state.places).map((p) {
                     final isSelected = state.selectedPlace?.id == p.id;
                     return Marker(
                       point: LatLng(p.latitude, p.longitude),
@@ -169,9 +197,33 @@ class _MapTabState extends State<MapTab> {
                 child: Row(children: [
                   Icon(Icons.search_rounded, color: cs.onSurfaceVariant),
                   const SizedBox(width: AppSpacing.sm),
-                  Text('Cari di area ini…',
+                  Expanded(
+                    child: TextField(
+                      controller: _searchCtrl,
+                      textInputAction: TextInputAction.search,
+                      onChanged: (v) => setState(() => _query = v),
+                      onSubmitted: (_) => _onSearchSubmit(state.places),
                       style: AppTypography.textTheme.bodyMedium
-                          ?.copyWith(color: cs.onSurfaceVariant)),
+                          ?.copyWith(color: cs.onSurface),
+                      decoration: InputDecoration(
+                        isCollapsed: true,
+                        border: InputBorder.none,
+                        hintText: 'Cari di area ini…',
+                        hintStyle: AppTypography.textTheme.bodyMedium
+                            ?.copyWith(color: cs.onSurfaceVariant),
+                      ),
+                    ),
+                  ),
+                  if (_query.isNotEmpty)
+                    GestureDetector(
+                      onTap: () {
+                        _searchCtrl.clear();
+                        setState(() => _query = '');
+                        FocusManager.instance.primaryFocus?.unfocus();
+                      },
+                      child: Icon(Icons.close_rounded,
+                          color: cs.onSurfaceVariant, size: 20),
+                    ),
                 ]),
               ),
             ),
