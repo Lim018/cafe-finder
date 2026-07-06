@@ -282,7 +282,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                                           style: AppTypography.textTheme.titleLarge
                                               ?.copyWith(color: cs.onSurface)),
                                     ]),
-                                    Text('${place.recommendationCount} ulasan',
+                                    Text('${place.reviewCount} ulasan',
                                         style: AppTypography.textTheme.labelSmall
                                             ?.copyWith(color: cs.onSurfaceVariant)),
                                   ]),

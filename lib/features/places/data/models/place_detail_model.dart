@@ -18,6 +18,7 @@ class PlaceDetailModel extends PlaceDetail {
     super.instagramUrl,
     super.googleMapsUrl,
     required super.avgRating,
+    super.reviewCount = 0,
     required super.recommendationCount,
     required super.status,
     super.categoryName,
@@ -72,6 +73,7 @@ class PlaceDetailModel extends PlaceDetail {
       instagramUrl: json['instagramUrl'],
       googleMapsUrl: json['googleMapsUrl'],
       avgRating: _parseDouble(json['avgRating']),
+      reviewCount: _parseInt(json['reviewCount'] ?? json['ratingCount']),
       recommendationCount: _parseInt(json['recommendationCount']),
       status: json['status'] ?? 'active',
       categoryName: json['category']?['name'],
@@ -126,7 +128,8 @@ class PlaceReviewModel extends PlaceReview {
     return PlaceReviewModel(
       id: json['id'] is String ? int.tryParse(json['id']) ?? 0 : (json['id'] as num?)?.toInt() ?? 0,
       rating: json['rating'] is String ? int.tryParse(json['rating']) ?? 0 : (json['rating'] as num?)?.toInt() ?? 0,
-      content: json['content'] ?? '',
+      // Backend field is `comment`; keep `content` as a fallback.
+      content: json['comment'] ?? json['content'] ?? '',
       createdAt: json['createdAt'] ?? '',
       userName: json['user']?['name'] ?? 'User',
       userAvatarUrl: json['user']?['avatarUrl'],

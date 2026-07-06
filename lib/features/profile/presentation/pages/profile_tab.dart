@@ -49,10 +49,9 @@ class ProfileTab extends StatelessWidget {
                             return Row(children: [
                               _StatCard(value: '$favCount', label: 'Favorit'),
                               const SizedBox(width: AppSpacing.sm),
-                              // TODO: tambah field reviews_count di User entity / endpoint
-                              const _StatCard(value: '–', label: 'Ulasan'),
-                              const SizedBox(width: AppSpacing.sm),
-                              const _StatCard(value: '–', label: 'Dikunjungi'),
+                              _StatCard(
+                                  value: '${user.reviewsCount}',
+                                  label: 'Ulasan'),
                             ]);
                           },
                         ),
@@ -200,31 +199,7 @@ class _ProfileHeader extends StatelessWidget {
                 colors: [Color(0xFF7A553C), Color(0xFF5A3E2B)],
               ),
             ),
-            child: SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.xl, AppSpacing.sm, AppSpacing.xl, 0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Profil Saya',
-                        style: AppTypography.textTheme.titleLarge
-                            ?.copyWith(color: Colors.white)),
-                    Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(Icons.edit_outlined,
-                          color: Colors.white, size: 20),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            child: const SafeArea(bottom: false, child: SizedBox.shrink()),
           ),
 
           // Avatar

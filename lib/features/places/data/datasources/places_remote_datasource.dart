@@ -62,10 +62,25 @@ class PlacesRemoteDataSourceImpl implements PlacesRemoteDataSource {
 
   @override
   Future<ApiResponse<PlaceDetailModel>> getPlaceDetail(int id) async {
-    final response = await _dio.get('/places/$id');
+    // Detail endpoint doesn't embed the reviews list, so fetch it separately
+    // and inject it into the detail payload before mapping. Reviews are
+    // best-effort — a failure there must not break the detail load.
+    final detailResponse = await _dio.get('/places/$id');
+    final detailData = Map<String, dynamic>.from(detailResponse.data);
+
+    try {
+      final reviewsResponse =
+          await _dio.get('/places/$id/reviews', queryParameters: {'limit': 10});
+      final reviewsList = reviewsResponse.data['data'];
+      if (detailData['data'] is Map && reviewsList is List) {
+        (detailData['data'] as Map)['reviews'] = reviewsList;
+      }
+    } catch (_) {
+      // Ignore — detail still renders without the reviews list.
+    }
 
     return ApiResponse.fromJson(
-      response.data,
+      detailData,
       (json) => PlaceDetailModel.fromJson(json),
     );
   }

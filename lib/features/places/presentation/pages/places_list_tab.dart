@@ -64,13 +64,7 @@ class _PlacesListTabState extends State<PlacesListTab> {
             // ── Search ──────────────────────────────────────────────────
             _buildSearchRow(context, cs),
 
-            // ── Promo banner ────────────────────────────────────────────
-            _PromoBanner(),
-
-            // ── Category chips ──────────────────────────────────────────
-            _buildChips(context, cs),
-
-            // ── List ────────────────────────────────────────────────────
+            // ── Scroll area: banner (scrolls away) + pinned chips + list ─
             Expanded(child: _buildBody(context, cs)),
           ],
         ),
@@ -254,38 +248,59 @@ class _PlacesListTabState extends State<PlacesListTab> {
           favIds = favState.favorites.map((f) => f.placeId).toSet();
         }
 
+        final itemCount = state.hasReachedMax
+            ? state.places.length
+            : state.places.length + 1;
+
         return RefreshIndicator(
           color: cs.primary,
           onRefresh: () async =>
               context.read<PlacesListBloc>().add(const LoadPlaces()),
-          child: ListView.builder(
+          child: CustomScrollView(
             controller: _scrollCtrl,
-            padding: const EdgeInsets.fromLTRB(
-                AppSpacing.xl, AppSpacing.sm,
-                AppSpacing.xl, AppSpacing.floatingNavHeight),
-            itemCount: state.hasReachedMax
-                ? state.places.length
-                : state.places.length + 1,
-            itemBuilder: (_, i) {
-              if (i >= state.places.length) {
-                return const Padding(
-                  padding: EdgeInsets.symmetric(vertical: AppSpacing.xl),
-                  child: Center(
-                      child: CircularProgressIndicator(strokeWidth: 2)),
-                );
-              }
-              final place = state.places[i];
-              return Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.lg),
-                child: PlaceCard(
-                  place: place,
-                  userLocation: userLoc,
-                  isFavorite: favIds.contains(place.id),
-                  onFavoriteTap: () =>
-                      context.read<FavoritesBloc>().add(ToggleFavorite(place.id)),
+            slivers: [
+              // Banner — scrolls up and disappears.
+              SliverToBoxAdapter(child: _PromoBanner()),
+              // Category chips — pinned below the search bar while scrolling.
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _ChipsHeaderDelegate(
+                  background: Theme.of(context).scaffoldBackgroundColor,
+                  child: _buildChips(context, cs),
                 ),
-              );
-            },
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.xl, AppSpacing.sm,
+                    AppSpacing.xl, AppSpacing.floatingNavHeight),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (_, i) {
+                      if (i >= state.places.length) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(vertical: AppSpacing.xl),
+                          child: Center(
+                              child: CircularProgressIndicator(strokeWidth: 2)),
+                        );
+                      }
+                      final place = state.places[i];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+                        child: PlaceCard(
+                          place: place,
+                          userLocation: userLoc,
+                          isFavorite: favIds.contains(place.id),
+                          onFavoriteTap: () => context
+                              .read<FavoritesBloc>()
+                              .add(ToggleFavorite(place.id)),
+                        ),
+                      );
+                    },
+                    childCount: itemCount,
+                  ),
+                ),
+              ),
+            ],
           ),
         );
       },
@@ -322,6 +337,38 @@ class _PlacesListTabState extends State<PlacesListTab> {
       ),
     );
   }
+}
+
+// ─── Pinned category chips header ────────────────────────────────────────────
+
+class _ChipsHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+  final Color background;
+
+  _ChipsHeaderDelegate({required this.child, required this.background});
+
+  static const double _extent = 58;
+
+  @override
+  double get minExtent => _extent;
+
+  @override
+  double get maxExtent => _extent;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    // Opaque background so scrolling content passes cleanly beneath the pin.
+    return Container(
+      color: background,
+      alignment: Alignment.centerLeft,
+      padding: const EdgeInsets.only(top: AppSpacing.xs),
+      child: child,
+    );
+  }
+
+  @override
+  bool shouldRebuild(_ChipsHeaderDelegate oldDelegate) =>
+      oldDelegate.child != child || oldDelegate.background != background;
 }
 
 // ─── Promo Banner ──────────────────────────────────────────────────────────

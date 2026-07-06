@@ -17,6 +17,7 @@ class PlaceDetail extends Equatable {
   final String? instagramUrl;
   final String? googleMapsUrl;
   final double avgRating;
+  final int reviewCount;
   final int recommendationCount;
   final String status;
   final String? categoryName;
@@ -42,6 +43,7 @@ class PlaceDetail extends Equatable {
     this.instagramUrl,
     this.googleMapsUrl,
     required this.avgRating,
+    this.reviewCount = 0,
     required this.recommendationCount,
     required this.status,
     this.categoryName,
@@ -55,7 +57,7 @@ class PlaceDetail extends Equatable {
   List<Object?> get props => [
         id, name, description, address, district, subdistrict, postalCode, latitude, longitude,
         priceMin, priceMax, phone, websiteUrl, instagramUrl, googleMapsUrl,
-        avgRating, recommendationCount, status, categoryName, tags, openingHours, photos, recentReviews,
+        avgRating, reviewCount, recommendationCount, status, categoryName, tags, openingHours, photos, recentReviews,
       ];
 }
 
