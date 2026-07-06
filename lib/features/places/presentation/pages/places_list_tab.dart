@@ -84,39 +84,23 @@ class _PlacesListTabState extends State<PlacesListTab> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
           AppSpacing.xl, AppSpacing.lg, AppSpacing.xl, AppSpacing.xs),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          BlocBuilder<AuthBloc, AuthState>(
-            builder: (_, state) {
-              final name = state is Authenticated
-                  ? state.user.name.split(' ').first
-                  : '';
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(name.isNotEmpty ? 'Halo, $name 👋' : 'Halo 👋',
-                      style: AppTypography.textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant)),
-                  Text('Temukan kafe',
-                      style: AppTypography.textTheme.displaySmall
-                          ?.copyWith(color: Theme.of(context).colorScheme.onSurface)),
-                ],
-              );
-            },
-          ),
-          // Notif button
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primaryContainer,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(Icons.notifications_outlined,
-                color: Theme.of(context).colorScheme.primary),
-          ),
-        ],
+      child: BlocBuilder<AuthBloc, AuthState>(
+        builder: (_, state) {
+          final name = state is Authenticated
+              ? state.user.name.split(' ').first
+              : '';
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(name.isNotEmpty ? 'Halo, $name 👋' : 'Halo 👋',
+                  style: AppTypography.textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
+              Text('Temukan kafe',
+                  style: AppTypography.textTheme.displaySmall
+                      ?.copyWith(color: Theme.of(context).colorScheme.onSurface)),
+            ],
+          );
+        },
       ),
     );
   }
@@ -126,51 +110,37 @@ class _PlacesListTabState extends State<PlacesListTab> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
           AppSpacing.xl, AppSpacing.sm, AppSpacing.xl, AppSpacing.sm),
-      child: Row(children: [
-        Expanded(
-          child: TextField(
-            controller: _searchCtrl,
-            onSubmitted: (v) =>
-                context.read<PlacesListBloc>().add(LoadPlaces(search: v)),
-            decoration: InputDecoration(
-              hintText: 'Cari kafe, area…',
-              prefixIcon: const Icon(Icons.search_rounded),
-              suffixIcon: ValueListenableBuilder<TextEditingValue>(
-                valueListenable: _searchCtrl,
-                builder: (_, v, __) => v.text.isEmpty
-                    ? const SizedBox.shrink()
-                    : IconButton(
-                        icon: const Icon(Icons.clear_rounded),
-                        onPressed: () {
-                          _searchCtrl.clear();
-                          context.read<PlacesListBloc>().add(const LoadPlaces());
-                        },
-                      ),
-              ),
-              filled: true,
-              fillColor: cs.surface,
-              contentPadding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.lg, vertical: AppSpacing.md),
-              border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(color: cs.outlineVariant)),
-              enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(color: cs.outlineVariant)),
-            ),
+      child: TextField(
+        controller: _searchCtrl,
+        onSubmitted: (v) =>
+            context.read<PlacesListBloc>().add(LoadPlaces(search: v)),
+        decoration: InputDecoration(
+          hintText: 'Cari kafe, area…',
+          prefixIcon: const Icon(Icons.search_rounded),
+          suffixIcon: ValueListenableBuilder<TextEditingValue>(
+            valueListenable: _searchCtrl,
+            builder: (_, v, __) => v.text.isEmpty
+                ? const SizedBox.shrink()
+                : IconButton(
+                    icon: const Icon(Icons.clear_rounded),
+                    onPressed: () {
+                      _searchCtrl.clear();
+                      context.read<PlacesListBloc>().add(const LoadPlaces());
+                    },
+                  ),
           ),
+          filled: true,
+          fillColor: cs.surface,
+          contentPadding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+          border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: cs.outlineVariant)),
+          enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: cs.outlineVariant)),
         ),
-        const SizedBox(width: AppSpacing.sm),
-        Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: cs.primary,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Icon(Icons.tune_rounded, color: cs.onPrimary),
-        ),
-      ]),
+      ),
     );
   }
 
@@ -325,10 +295,10 @@ class _PlacesListTabState extends State<PlacesListTab> {
   // ── FAB ──────────────────────────────────────────────────────────────────
   Widget _buildFab(BuildContext context, ColorScheme cs) {
     // Lift FAB above the floating bottom nav bar (parent Scaffold uses
-    // extendBody:true so the body extends under the nav).
-    final navInset = AppSpacing.floatingNavHeight +
-        AppSpacing.sm +
-        MediaQuery.of(context).padding.bottom;
+    // extendBody:true so the body extends under the nav). Matches the
+    // clearance used elsewhere (map_tab, favorites, profile) — floatingNavHeight
+    // already covers the nav bar's full footprint incl. safe-area inset.
+    final navInset = AppSpacing.floatingNavHeight + AppSpacing.sm;
     return Padding(
       padding: EdgeInsets.only(bottom: navInset),
       child: FloatingActionButton(

@@ -10,8 +10,12 @@ abstract class PlaceDetailEvent extends Equatable {
 class LoadPlaceDetail extends PlaceDetailEvent {
   final int id;
 
-  const LoadPlaceDetail(this.id);
+  /// When true, skip the loading state if data is already loaded — refresh
+  /// in place so the existing tree (Hero image, PageView) isn't torn down.
+  final bool silent;
+
+  const LoadPlaceDetail(this.id, {this.silent = false});
 
   @override
-  List<Object> get props => [id];
+  List<Object> get props => [id, silent];
 }

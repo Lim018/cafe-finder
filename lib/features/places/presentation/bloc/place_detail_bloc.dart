@@ -16,7 +16,11 @@ class PlaceDetailBloc extends Bloc<PlaceDetailEvent, PlaceDetailState> {
   }
 
   Future<void> _onLoadPlaceDetail(LoadPlaceDetail event, Emitter<PlaceDetailState> emit) async {
-    emit(PlaceDetailLoading());
+    // Silent refresh keeps the current Loaded tree mounted (avoids tearing down
+    // the Hero/PageView mid-frame, which trips a framework assertion).
+    if (!(event.silent && state is PlaceDetailLoaded)) {
+      emit(PlaceDetailLoading());
+    }
     try {
       final response = await _repository.getPlaceDetail(event.id);
       if (response.data != null) {

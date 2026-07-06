@@ -41,9 +41,6 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
   }
 
   void _showReviewSheet() {
-    final reviewCtrl = TextEditingController();
-    int rating = 5;
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -51,70 +48,9 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
       backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
-      builder: (sheetCtx) => StatefulBuilder(
-        builder: (_, setSheet) => Padding(
-          padding: EdgeInsets.only(
-              bottom: MediaQuery.of(sheetCtx).viewInsets.bottom),
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.xl, AppSpacing.md, AppSpacing.xl, AppSpacing.xl),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Handle
-                  Container(
-                    width: 40,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: AppSpacing.lg),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.outlineVariant,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  Text('Tulis Ulasan',
-                      style: AppTypography.textTheme.headlineMedium
-                          ?.copyWith(color: Theme.of(context).colorScheme.onSurface)),
-                  const SizedBox(height: 4),
-                  Text('Bagikan pengalamanmu di sini',
-                      style: AppTypography.textTheme.bodySmall
-                          ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
-                  const SizedBox(height: AppSpacing.xl),
-                  // Interactive stars
-                  InteractiveRatingStars(
-                    initialRating: rating,
-                    size: 44,
-                    onRatingChanged: (r) => setSheet(() => rating = r),
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-                  // Review text
-                  TextField(
-                    controller: reviewCtrl,
-                    maxLines: 4,
-                    decoration: const InputDecoration(
-                      hintText: 'Ceritakan pengalaman kamu…',
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-                  // Submit
-                  AppButton(
-                    label: 'Kirim Ulasan',
-                    onPressed: () {
-                      context.read<ReviewsBloc>().add(SubmitReview(
-                            placeId: widget.placeId,
-                            rating: rating,
-                            content: reviewCtrl.text.trim(),
-                          ));
-                      Navigator.pop(sheetCtx);
-                      reviewCtrl.dispose();
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
+      // The sheet content is its own StatefulWidget so its TextEditingController
+      // is disposed at unmount (after the close animation), not on pop.
+      builder: (_) => _ReviewSheet(placeId: widget.placeId),
     );
   }
 
@@ -126,7 +62,9 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(state.message)),
           );
-          context.read<PlaceDetailBloc>().add(LoadPlaceDetail(widget.placeId));
+          context
+              .read<PlaceDetailBloc>()
+              .add(LoadPlaceDetail(widget.placeId, silent: true));
         }
       },
       child: Scaffold(
@@ -706,6 +644,97 @@ class _ReviewCard extends StatelessWidget {
               style: AppTypography.textTheme.bodySmall
                   ?.copyWith(color: cs.onSurface, height: 1.5)),
         ],
+      ),
+    );
+  }
+}
+
+// ─── Review Sheet ───────────────────────────────────────────────────────────
+// Own StatefulWidget so the controller's lifecycle matches the element: it is
+// disposed on unmount (after the close animation), never while the sheet is
+// still rebuilding during its exit transition. Resolves Theme/MediaQuery from
+// its own (sheet-route) context.
+class _ReviewSheet extends StatefulWidget {
+  final int placeId;
+  const _ReviewSheet({required this.placeId});
+
+  @override
+  State<_ReviewSheet> createState() => _ReviewSheetState();
+}
+
+class _ReviewSheetState extends State<_ReviewSheet> {
+  final _reviewCtrl = TextEditingController();
+  int _rating = 5;
+
+  @override
+  void dispose() {
+    _reviewCtrl.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final content = _reviewCtrl.text.trim();
+    final bloc = context.read<ReviewsBloc>();
+    FocusManager.instance.primaryFocus?.unfocus();
+    Navigator.pop(context);
+    bloc.add(SubmitReview(
+      placeId: widget.placeId,
+      rating: _rating,
+      content: content,
+    ));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+              AppSpacing.xl, AppSpacing.md, AppSpacing.xl, AppSpacing.xl),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: AppSpacing.lg),
+                decoration: BoxDecoration(
+                  color: cs.outlineVariant,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Text('Tulis Ulasan',
+                  style: AppTypography.textTheme.headlineMedium
+                      ?.copyWith(color: cs.onSurface)),
+              const SizedBox(height: 4),
+              Text('Bagikan pengalamanmu di sini',
+                  style: AppTypography.textTheme.bodySmall
+                      ?.copyWith(color: cs.onSurfaceVariant)),
+              const SizedBox(height: AppSpacing.xl),
+              // Interactive stars
+              InteractiveRatingStars(
+                initialRating: _rating,
+                size: 44,
+                onRatingChanged: (r) => _rating = r,
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              // Review text
+              TextField(
+                controller: _reviewCtrl,
+                maxLines: 4,
+                decoration: const InputDecoration(
+                  hintText: 'Ceritakan pengalaman kamu…',
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              // Submit
+              AppButton(label: 'Kirim Ulasan', onPressed: _submit),
+            ],
+          ),
+        ),
       ),
     );
   }

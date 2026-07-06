@@ -32,7 +32,7 @@ class _FloatingNavBar extends StatelessWidget {
   final ValueChanged<int> onTap;
 
   static const _items = [
-    _NavItem(Icons.format_list_bulleted_outlined, Icons.format_list_bulleted, 'Daftar'),
+    _NavItem(Icons.format_list_bulleted_outlined, Icons.format_list_bulleted, 'Home'),
     _NavItem(Icons.map_outlined, Icons.map_rounded, 'Peta'),
     _NavItem(Icons.favorite_border_rounded, Icons.favorite_rounded, 'Favorit'),
     _NavItem(Icons.person_outline_rounded, Icons.person_rounded, 'Profil'),
