@@ -28,3 +28,17 @@ class SelectPlaceMarker extends MapEvent {
 }
 
 class ClearSelectedPlace extends MapEvent {}
+
+/// Center the map on [place] and select it — dispatched from the detail
+/// screen before navigating to the Peta tab.
+class FocusPlace extends MapEvent {
+  final Place place;
+
+  const FocusPlace(this.place);
+
+  @override
+  List<Object?> get props => [place];
+}
+
+/// Consumes the one-shot [MapState.focusTarget] after the camera has moved.
+class ClearFocusTarget extends MapEvent {}

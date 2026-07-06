@@ -5,7 +5,9 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../bloc/place_detail_bloc.dart';
 import '../widgets/place_detail_skeleton.dart';
+import '../../domain/entities/place.dart';
 import '../../../favorites/presentation/bloc/favorites_bloc.dart';
+import '../../../map/presentation/bloc/map_bloc.dart';
 import '../../../reviews/presentation/bloc/reviews_bloc.dart';
 import '../../../../core/components/app_button.dart';
 import '../../../../core/components/rating_stars.dart';
@@ -345,6 +347,36 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                                 ),
                               ]),
                             ),
+
+                          // ── Lihat lokasi di peta ─────────────────────
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(
+                                AppSpacing.xl, AppSpacing.sm,
+                                AppSpacing.xl, AppSpacing.md),
+                            child: AppButton(
+                              label: 'Lihat di Peta',
+                              icon: const Icon(Icons.map_outlined, size: 18),
+                              onPressed: () {
+                                context.read<MapBloc>().add(FocusPlace(Place(
+                                      id: place.id,
+                                      name: place.name,
+                                      address: place.address,
+                                      district: place.district,
+                                      latitude: place.latitude,
+                                      longitude: place.longitude,
+                                      avgRating: place.avgRating,
+                                      recommendationCount:
+                                          place.recommendationCount,
+                                      status: place.status,
+                                      categoryName: place.categoryName,
+                                      photoUrl: place.photos.isNotEmpty
+                                          ? place.photos.first.url
+                                          : null,
+                                    )));
+                                context.go('/map');
+                              },
+                            ),
+                          ),
 
                           // ── Description ─────────────────────────────
                           if (place.description != null) ...[

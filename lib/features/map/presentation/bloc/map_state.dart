@@ -9,6 +9,9 @@ class MapState extends Equatable {
   final Place? selectedPlace;
   final List<LatLng> routePoints;
   final String errorMessage;
+  // One-shot camera target set by FocusPlace (from the detail "Lihat di Peta"
+  // button); cleared once the map has moved there.
+  final LatLng? focusTarget;
 
   const MapState({
     this.status = MapStatus.initial,
@@ -17,6 +20,7 @@ class MapState extends Equatable {
     this.selectedPlace,
     this.routePoints = const [],
     this.errorMessage = '',
+    this.focusTarget,
   });
 
   MapState copyWith({
@@ -27,6 +31,8 @@ class MapState extends Equatable {
     List<LatLng>? routePoints,
     bool clearSelectedPlace = false,
     String? errorMessage,
+    LatLng? focusTarget,
+    bool clearFocusTarget = false,
   }) {
     return MapState(
       status: status ?? this.status,
@@ -35,6 +41,7 @@ class MapState extends Equatable {
       selectedPlace: clearSelectedPlace ? null : (selectedPlace ?? this.selectedPlace),
       routePoints: clearSelectedPlace ? [] : (routePoints ?? this.routePoints),
       errorMessage: errorMessage ?? this.errorMessage,
+      focusTarget: clearFocusTarget ? null : (focusTarget ?? this.focusTarget),
     );
   }
 
@@ -46,5 +53,6 @@ class MapState extends Equatable {
         selectedPlace,
         routePoints,
         errorMessage,
+        focusTarget,
       ];
 }

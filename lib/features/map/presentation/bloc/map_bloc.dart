@@ -19,6 +19,26 @@ class MapBloc extends Bloc<MapEvent, MapState> {
     on<LoadMapPlaces>(_onLoadMapPlaces);
     on<SelectPlaceMarker>(_onSelectPlaceMarker);
     on<ClearSelectedPlace>(_onClearSelectedPlace);
+    on<FocusPlace>(_onFocusPlace);
+    on<ClearFocusTarget>(_onClearFocusTarget);
+  }
+
+  Future<void> _onFocusPlace(FocusPlace event, Emitter<MapState> emit) async {
+    final place = event.place;
+    // Make sure the target has a marker even if it wasn't in the loaded set.
+    final places = state.places.any((p) => p.id == place.id)
+        ? state.places
+        : [...state.places, place];
+    emit(state.copyWith(
+      status: MapStatus.success,
+      places: places,
+      focusTarget: LatLng(place.latitude, place.longitude),
+    ));
+    add(SelectPlaceMarker(place));
+  }
+
+  void _onClearFocusTarget(ClearFocusTarget event, Emitter<MapState> emit) {
+    emit(state.copyWith(clearFocusTarget: true));
   }
 
   Future<void> _onInitializeMap(InitializeMap event, Emitter<MapState> emit) async {

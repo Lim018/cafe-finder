@@ -22,11 +22,31 @@ class MapTab extends StatefulWidget {
 
 class _MapTabState extends State<MapTab> {
   final MapController _mapCtrl = MapController();
+  LatLng? _appliedFocus;
 
   @override
   void initState() {
     super.initState();
     context.read<MapBloc>().add(InitializeMap());
+  }
+
+  /// Move the camera to the focus target set by FocusPlace (detail "Lihat di
+  /// Peta" button). Runs once per target, then clears it. The marker is already
+  /// selected by the FocusPlace handler.
+  void _maybeApplyFocus(MapState state) {
+    final f = state.focusTarget;
+    if (f == null) {
+      _appliedFocus = null;
+      return;
+    }
+    if (f == _appliedFocus) return;
+    _appliedFocus = f;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _mapCtrl.move(f, 16.5);
+      context.read<MapBloc>().add(ClearFocusTarget());
+    });
   }
 
   @override
@@ -46,6 +66,8 @@ class _MapTabState extends State<MapTab> {
             state.status == MapStatus.loading) {
           return const MapSkeleton();
         }
+
+        _maybeApplyFocus(state);
 
         final center =
             state.currentLocation ?? const LatLng(-6.200000, 106.816666);
