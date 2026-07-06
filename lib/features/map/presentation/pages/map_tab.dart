@@ -1,5 +1,5 @@
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:go_router/go_router.dart';
@@ -85,8 +85,9 @@ class _MapTabState extends State<MapTab> {
                     final isSelected = state.selectedPlace?.id == p.id;
                     return Marker(
                       point: LatLng(p.latitude, p.longitude),
-                      width: isSelected ? 48 : 40,
-                      height: isSelected ? 56 : 48,
+                      width: isSelected ? 56 : 44,
+                      height: isSelected ? 56 : 44,
+                      alignment: Alignment.topCenter,
                       child: GestureDetector(
                         onTap: () =>
                             context.read<MapBloc>().add(SelectPlaceMarker(p)),
@@ -203,54 +204,13 @@ class _CafeMarker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isSelected ? AppTheme.primary : AppTheme.primaryLight;
-    final size = isSelected ? 48.0 : 40.0;
-    return Column(
-      children: [
-        Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 2.5),
-            boxShadow: [
-              BoxShadow(
-                  color: color.withOpacity(0.4),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4)),
-            ],
-          ),
-          child: const Icon(Icons.local_cafe_rounded,
-              color: Colors.white, size: 22),
-        ),
-        // Pin tip
-        CustomPaint(
-          size: const Size(12, 6),
-          painter: _PinTipPainter(color),
-        ),
-      ],
+    final size = isSelected ? 56.0 : 44.0;
+    return SvgPicture.asset(
+      'assets/logo/bean_marker_foreground.svg',
+      width: size,
+      height: size,
     );
   }
-}
-
-class _PinTipPainter extends CustomPainter {
-  final Color color;
-  const _PinTipPainter(this.color);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = color;
-    final path = ui.Path()
-      ..moveTo(0, 0)
-      ..lineTo(size.width / 2, size.height)
-      ..lineTo(size.width, 0)
-      ..close();
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(_) => false;
 }
 
 class _MapControlBtn extends StatelessWidget {

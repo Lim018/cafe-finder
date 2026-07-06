@@ -29,9 +29,11 @@ class PlaceListItemModel extends Place {
   }
 
   factory PlaceListItemModel.fromJson(Map<String, dynamic> json) {
-    String? photo;
-    if (json['photos'] != null && (json['photos'] as List).isNotEmpty) {
-      photo = json['photos'][0]['url'];
+    String? photo = json['coverPhotoUrl'];
+    if ((photo == null || photo.isEmpty) &&
+        json['photos'] != null &&
+        (json['photos'] as List).isNotEmpty) {
+      photo = json['photos'][0]['url'] ?? json['photos'][0]['photoUrl'];
     }
 
     return PlaceListItemModel(

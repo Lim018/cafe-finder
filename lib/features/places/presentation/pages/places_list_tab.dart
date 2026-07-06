@@ -325,7 +325,14 @@ class _PlacesListTabState extends State<PlacesListTab> {
 
   // ── FAB ──────────────────────────────────────────────────────────────────
   Widget _buildFab(BuildContext context, ColorScheme cs) {
-    return FloatingActionButton(
+    // Lift FAB above the floating bottom nav bar (parent Scaffold uses
+    // extendBody:true so the body extends under the nav).
+    final navInset = AppSpacing.floatingNavHeight +
+        AppSpacing.floatingNavBottomInset +
+        MediaQuery.of(context).padding.bottom;
+    return Padding(
+      padding: EdgeInsets.only(bottom: navInset),
+      child: FloatingActionButton(
       backgroundColor: cs.primary,
       foregroundColor: cs.onPrimary,
       elevation: 4,
@@ -343,8 +350,9 @@ class _PlacesListTabState extends State<PlacesListTab> {
           context.push('/login');
         }
       },
-      tooltip: 'Tambah Lokasi',
-      child: const Icon(Icons.add_location_alt_rounded),
+        tooltip: 'Tambah Lokasi',
+        child: const Icon(Icons.add_location_alt_rounded),
+      ),
     );
   }
 }

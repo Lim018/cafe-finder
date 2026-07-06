@@ -40,6 +40,20 @@ class PlaceDetailModel extends PlaceDetail {
     return 0.0;
   }
 
+  static List<PlacePhotoModel> _parsePhotos(Map<String, dynamic> json) {
+    final list = json['photos'] != null
+        ? (json['photos'] as List).map((p) => PlacePhotoModel.fromJson(p)).toList()
+        : <PlacePhotoModel>[];
+    // Backend often returns empty photos[] but fills coverPhotoUrl.
+    if (list.isEmpty) {
+      final cover = json['coverPhotoUrl'];
+      if (cover != null && (cover as String).isNotEmpty) {
+        list.add(PlacePhotoModel(id: 0, url: cover));
+      }
+    }
+    return list;
+  }
+
   factory PlaceDetailModel.fromJson(Map<String, dynamic> json) {
     return PlaceDetailModel(
       id: _parseInt(json['id']),
@@ -67,9 +81,7 @@ class PlaceDetailModel extends PlaceDetail {
       openingHours: json['openingHours'] != null
           ? (json['openingHours'] as List).map((h) => OperatingHourModel.fromJson(h)).toList()
           : [],
-      photos: json['photos'] != null
-          ? (json['photos'] as List).map((p) => PlacePhotoModel.fromJson(p)).toList()
-          : [],
+      photos: _parsePhotos(json),
       recentReviews: json['reviews'] != null
           ? (json['reviews'] as List).map((r) => PlaceReviewModel.fromJson(r)).toList()
           : [],
@@ -95,7 +107,7 @@ class PlacePhotoModel extends PlacePhoto {
   factory PlacePhotoModel.fromJson(Map<String, dynamic> json) {
     return PlacePhotoModel(
       id: json['id'] is String ? int.tryParse(json['id']) ?? 0 : (json['id'] as num?)?.toInt() ?? 0,
-      url: json['url'],
+      url: json['url'] ?? json['photoUrl'],
     );
   }
 }
